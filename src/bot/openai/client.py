@@ -10,7 +10,7 @@ client = AsyncOpenAI(api_key=settings.openai_api_key)
 IMAGE_TOOL = {
   "type": "image_generation",
   "partial_images": 0,
-  "output_format": "base64",
+  "output_format": "png",
   "quality": "auto",
   "size": "auto",
 }
