@@ -16,11 +16,19 @@ class Settings(BaseSettings):
 
   # OpenAI
   openai_api_key: str
-  openai_model: str = "gpt-image-1"
+  openai_model: str
+  openai_img_model: str
 
   # Server
   host: str = "0.0.0.0"
   port: int = 8000
   debug: bool = False
+
+  # Environment
+  environment: str
+
+  @property
+  def is_production(self) -> bool:
+    return self.environment == "production"
 
 settings = Settings()

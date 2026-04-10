@@ -14,7 +14,6 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 def build_bot_app() -> Application:
-
   app = (
     Application.builder()
     .token(settings.telegram_bot_token)
@@ -22,7 +21,6 @@ def build_bot_app() -> Application:
   )
 
   chat_filter = filters.Chat(chat_id=settings.chat_id)
-
   app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND & chat_filter, handle_message)
   )
@@ -33,17 +31,36 @@ def build_bot_app() -> Application:
 async def lifespan(app: FastAPI):
   bot_app = build_bot_app()
   await bot_app.initialize()
-  await bot_app.bot.set_webhook(
-    url=settings.webhook_url,
-    secret_token=settings.webhook_secret,
-  )
-  app.state.bot_app = bot_app
-  logger.info("Bot started, webhook set to %s", settings.webhook_url)
 
-  yield
+  if settings.is_production:
 
-  await bot_app.bot.delete_webhook()
-  await bot_app.shutdown()
+    # Webhook mode
+    await bot_app.bot.set_webhook(
+      url=settings.webhook_url,
+      secret_token=settings.webhook_secret,
+    )
+    app.state.bot_app = bot_app
+    logger.info("Bot started in webhook mode: %s", settings.webhook_url)
+
+    yield
+
+    await bot_app.bot.delete_webhook()
+    await bot_app.shutdown()
+
+  else:
+
+    # Polling mode
+    await bot_app.bot.delete_webhook(drop_pending_updates=True)
+    await bot_app.start()
+    await bot_app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+    logger.info("Bot started in polling mode (env: %s)", settings.environment)
+
+    yield
+
+    await bot_app.updater.stop()
+    await bot_app.stop()
+    await bot_app.shutdown()
+
   logger.info("Bot stopped")
 
 app = FastAPI(lifespan=lifespan)

@@ -5,16 +5,18 @@ from bot.openai.prompts import SYSTEM_PROMPT, PROMPT_CACHE_KEY
 
 logger = logging.getLogger(__name__)
 
-client = AsyncOpenAI(api_key=settings.openai_api_key)
+client = AsyncOpenAI(api_key=settings.openai_api_key, max_retries=0)
 
 IMAGE_TOOL = {
   "type": "image_generation",
   "partial_images": 0,
-  "output_format": "png",
-  "quality": "medium",
-  "size": "1536x1024",
-  "background": "opaque",
-  "moderation": "auto",
+  "output_format": "webp",
+  "quality": "low",
+  "size": "1024x1024",
+  "background": "transparent",
+  "input_fidelity": "low",
+  "model": settings.openai_img_model,
+  "moderation": "low",
 }
 
 async def get_response(user_message: str) -> dict:
