@@ -8,21 +8,21 @@ class Settings(BaseSettings):
   )
 
   # Bot
-  bot_name: str = "imgen-bot"
-  telegram_bot_token: str
-  webhook_url: str
-  webhook_secret: str
-  chat_id: int
+  #bot_name: str = "imgen-bot"
+  #telegram_bot_token: str
+  #webhook_url: str
+  #webhook_secret: str
+  #chat_id: int
 
   # OpenAI
-  openai_api_key: str
-  openai_model: str
-  openai_img_model: str
+  #openai_api_key: str
+  #openai_model: str
+  #openai_img_model: str
 
   # Server
-  host: str = "0.0.0.0"
-  port: int = 8000
-  debug: bool = False
+  #host: str = "0.0.0.0"
+  #port: int = 8000
+  #debug: bool = False
 
   # Environment
   environment: str
