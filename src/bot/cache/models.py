@@ -1,15 +1,18 @@
-from uuid import UUID
-
-from pydantic import BaseModel
+from datetime import date
+from uuid import UUID, uuid4
+from pydantic import BaseModel, Field
 
 from db.models import NewsPost
 
-class Slide(BaseModel):
+class NewsItem(BaseModel):
+  id: UUID = Field(default_factory=uuid4)
   original: NewsPost
-  slide_prompt: str
-  slide_path: str
+  draft: str
+  image_path: str | None = None
+  image_urn: str | None = None
 
 class SessionCache(BaseModel):
-  id: UUID
-  post_draft: str
-  slides: list[Slide]
+  date: date
+  person_urn: str
+  token: str
+  news: list[NewsItem]
