@@ -1,5 +1,7 @@
 import asyncio
+import base64
 import logging
+import os
 import random
 from uuid import UUID
 
@@ -17,6 +19,11 @@ from llm import LLMClient
 logger = logging.getLogger(__name__)
 llm = LLMClient()
 
+def _get_field(obj, key):
+  if isinstance(obj, dict):
+    return obj.get(key)
+  return getattr(obj, key, None)
+
 async def run_generate_draft(item: NewsItem) -> NewsItem:
   prompt = (
     f"Title: {item.original.title}\n"
@@ -26,39 +33,49 @@ async def run_generate_draft(item: NewsItem) -> NewsItem:
   )
   result = await Runner.run(llm.get_designer(), prompt)
   drafts = result.final_output.draft_options
+  item.drafts = drafts
   item.draft = "\n---\n".join(
-    [f"*Option {i+1}*\n{d.intro}\n{d.bridge}\n\n_{d.image_draft}_" for i, d in enumerate(drafts)]
+    [f"<b>Option {i+1}</b>\n{d.intro}\n{d.bridge}\n\n<i>{d.image_draft}</i>" for i, d in enumerate(drafts)]
   )
-  # store all drafts temporarily for picking
-  item.__dict__["_drafts"] = drafts
   return item
 
 async def run_generate_image(item: NewsItem, draft_index: int) -> NewsItem:
-  drafts = item.__dict__.get("_drafts", [])
-  if not drafts:
+  if not item.drafts:
     raise ValueError("No drafts found on item")
 
-  chosen = drafts[draft_index]
+  chosen = item.drafts[draft_index]
   prompt = f"{chosen.intro}\n{chosen.bridge}\n{chosen.image_draft}"
   result = await Runner.run(llm.get_artist(), prompt)
-  output = result.final_output
 
-  # save image to temp/
-  import base64, os
+  image_b64: str | None = None
+  for new_item in result.new_items:
+    if _get_field(new_item, "type") != "tool_call_item":
+      continue
+    raw = _get_field(new_item, "raw_item")
+    if _get_field(raw, "type") != "image_generation_call":
+      continue
+    img = _get_field(raw, "result")
+    if isinstance(img, str) and img:
+      image_b64 = img
+      break
+
+  if not image_b64:
+    raise ValueError("Agent returned no image data")
+
   dir_path = f"temp/{item.id}"
   os.makedirs(dir_path, exist_ok=True)
   image_path = f"{dir_path}/slide.png"
+
   with open(image_path, "wb") as f:
-    f.write(base64.b64decode(output.image_b64))
+    f.write(base64.b64decode(image_b64))
+
+  logger.info("Image saved to %s size=%s", image_path, os.path.getsize(image_path))
 
   item.image_path = image_path
   item.draft = f"{chosen.intro}\n\n{chosen.bridge}"
   return item
 
 async def run_post_all(session: SessionCache, user_id: int) -> list[str]:
-  """Posts all approved news items with random delay between each."""
-  from cache.session import set_state
-
   approved = [n for n in session.news if n.image_path and n.draft]
   urns = []
 
@@ -68,14 +85,24 @@ async def run_post_all(session: SessionCache, user_id: int) -> list[str]:
       urns.append(urn)
       await update_status(item.original.id, PostStatus.posted)
       logger.info("Posted item=%s urn=%s", item.id, urn)
+
+      _cleanup_temp(item)
+
     except Exception as e:
       logger.error("Failed to post item=%s error=%s", item.id, e)
       await update_status(item.original.id, PostStatus.dropped)
 
     if i < len(approved) - 1:
-      delay = random.randint(60, 300)  # 1-5 min
+      delay = random.randint(60, 300)
       logger.info("Waiting %ss before next post", delay)
       await asyncio.sleep(delay)
 
   await set_state(user_id, State.idle)
   return urns
+
+def _cleanup_temp(item: NewsItem) -> None:
+  import shutil
+  dir_path = f"temp/{item.id}"
+  if os.path.exists(dir_path):
+    shutil.rmtree(dir_path)
+    logger.info("Cleaned temp dir %s", dir_path)

@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -38,3 +39,5 @@ class Settings(BaseSettings):
     return self.environment == "production"
 
 settings = Settings()
+
+os.environ["OPENAI_API_KEY"] = settings.openai_api_key

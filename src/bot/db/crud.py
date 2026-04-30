@@ -1,8 +1,15 @@
+import json
 from datetime import date
 from uuid import UUID
 
 from db.client import get_pool
 from db.models import NewsPost, PostStatus
+
+def _parse_row(row) -> NewsPost:
+  data = dict(row)
+  if isinstance(data.get("metadata"), str):
+    data["metadata"] = json.loads(data["metadata"])
+  return NewsPost(**data)
 
 async def get_unposted(filter_date: date | None = None) -> list[NewsPost]:
   pool = await get_pool()
@@ -12,8 +19,10 @@ async def get_unposted(filter_date: date | None = None) -> list[NewsPost]:
       SELECT id, subreddit, title, content, url, ups, upvote_ratio, posted_at
       FROM news_posts
       WHERE status = 'unprocessed'
+      AND ups >= 100
       AND posted_at::date = $1
-      ORDER BY posted_at ASC
+      ORDER BY ups DESC
+      LIMIT 3
       """,
       filter_date,
     )
@@ -23,10 +32,11 @@ async def get_unposted(filter_date: date | None = None) -> list[NewsPost]:
       SELECT id, subreddit, title, content, url, ups, upvote_ratio, posted_at
       FROM news_posts
       WHERE status = 'unprocessed'
-      ORDER BY posted_at ASC
+      AND ups >= 100
+      ORDER BY ups DESC
       """
     )
-  return [NewsPost(**dict(row)) for row in rows]
+  return [_parse_row(row) for row in rows]
 
 async def update_status(post_id: UUID, status: PostStatus) -> NewsPost | None:
   pool = await get_pool()
@@ -40,4 +50,4 @@ async def update_status(post_id: UUID, status: PostStatus) -> NewsPost | None:
     status.value,
     post_id,
   )
-  return NewsPost(**dict(row)) if row else None
+  return _parse_row(row) if row else None

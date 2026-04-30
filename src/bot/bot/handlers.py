@@ -37,21 +37,21 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
   await set_state(user_id, State.reviewing_news)
   context.user_data["news_index"] = 0
-  await _send_news_item(update, session, 0)
+  await _send_news_item(update.message, session, 0)
 
-async def _send_news_item(update, session, index: int) -> None:
+async def _send_news_item(message, session, index: int) -> None:
   item = session.news[index]
   post = item.original
   total = len(session.news)
   text = (
-    f"📰 *{index+1}/{total}*\n\n"
-    f"*{post.title}*\n\n"
+    f"📰 <b>{index+1}/{total}</b>\n\n"
+    f"<b>{post.title}</b>\n\n"
     f"r/{post.subreddit} · ⬆️ {post.ups}\n"
     f"{post.url or ''}"
   )
-  await update.effective_message.reply_text(
+  await message.reply_text(
     text,
-    parse_mode="Markdown",
+    parse_mode="HTML",
     reply_markup=news_review_kb(),
   )
 
@@ -64,6 +64,18 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 @admin_only
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
   user_id = update.effective_user.id
+  from datetime import date, timedelta
+  from cache.temp import get_session, clear_session
+  import shutil
+
+  session = await get_session(date.today() - timedelta(days=1))
+  if session:
+    for item in session.news:
+      dir_path = f"temp/{item.id}"
+      if os.path.exists(dir_path):
+        shutil.rmtree(dir_path)
+    await clear_session(session.date)
+
   await clear_state(user_id)
   await update.message.reply_text("🛑 Session cancelled.")
 
@@ -98,7 +110,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
       context.user_data["news_index"] = index
 
     if index < len(session.news):
-      await _send_news_item(query, session, index)
+      await _send_news_item(query.message, session, index)
     else:
       await set_state(user_id, State.generating_drafts)
       await query.message.reply_text(
@@ -134,7 +146,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     item = next((n for n in session.news if str(n.id) == item_id), None)
 
     if data == "image:redo":
-      await query.edit_message_text("🔄 Regenerating image...")
+      await query.message.reply_text("🔄 Regenerating image...")
       draft_index = context.user_data.get("draft_index", 0)
       item = await run_generate_image(item, draft_index)
       for i, n in enumerate(session.news):
@@ -144,7 +156,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
       await _send_image_review(query.message, item, user_id)
 
     elif data == "image:approve":
-      await query.edit_message_text("✅ Image approved.")
+      await query.message.reply_text("✅ Image approved.")
       await set_state(user_id, State.generating_drafts)
       await _generate_next_draft(query.message, session, user_id, context)
 
@@ -176,8 +188,8 @@ async def _generate_next_draft(message, session, user_id: int, context) -> None:
 
   await set_state(user_id, State.generating_drafts)
   await message.reply_text(
-    f"✍️ Generating drafts for:\n*{item.original.title}*",
-    parse_mode="Markdown",
+    f"✍️ Generating drafts for:\n<b>{item.original.title}</b>",
+    parse_mode="HTML",
   )
 
   item = await run_generate_draft(item)
