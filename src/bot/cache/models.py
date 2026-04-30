@@ -1,6 +1,4 @@
-from datetime import date
 from uuid import UUID, uuid4
-
 from pydantic import BaseModel, Field
 
 from db.models import NewsPost
@@ -15,7 +13,6 @@ class NewsItem(BaseModel):
   drafts: list[Draft] = Field(default_factory=list)
 
 class SessionCache(BaseModel):
-  date: date
   person_urn: str
   token: str
   news: list[NewsItem]

@@ -1,3 +1,4 @@
+import os
 import logging
 from contextlib import asynccontextmanager
 
@@ -58,6 +59,8 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(router)
 
 if __name__ == "__main__":
+  os.makedirs("temp", exist_ok=True)
+
   uvicorn.run(
     "main:app",
     host=settings.host,

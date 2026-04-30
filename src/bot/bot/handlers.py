@@ -1,3 +1,4 @@
+import os
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -13,7 +14,7 @@ from bot.runner import run_generate_draft, run_generate_image, run_post_all
 from bot.session import init_session, save_session
 from bot.states import State
 from cache.session import clear_state, get_state, set_state
-from cache.temp import get_session
+from cache.temp import clear_session, get_session
 from db.crud import update_status
 from db.models import PostStatus
 
@@ -23,7 +24,6 @@ logger = logging.getLogger(__name__)
 async def _get_current_item(session, user_id: int):
   """Returns first news item not yet drafted."""
   return next((n for n in session.news if not n.draft), None)
-
 
 # ── commands ───────────────────────────────────────────────────────────────
 @admin_only
@@ -64,17 +64,15 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 @admin_only
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
   user_id = update.effective_user.id
-  from datetime import date, timedelta
-  from cache.temp import get_session, clear_session
   import shutil
 
-  session = await get_session(date.today() - timedelta(days=1))
+  session = await get_session()
   if session:
     for item in session.news:
       dir_path = f"temp/{item.id}"
       if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
-    await clear_session(session.date)
+    await clear_session()
 
   await clear_state(user_id)
   await update.message.reply_text("🛑 Session cancelled.")
@@ -89,8 +87,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
   state = await get_state(user_id)
   data = query.data
 
-  from datetime import date, timedelta
-  session = await get_session(date.today() - timedelta(days=1))
+  session = await get_session()
   if not session:
     await query.edit_message_text("⚠️ No active session. Run /start first.")
     return
@@ -165,13 +162,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if data == "post:confirm":
       await query.edit_message_text("🚀 Posting with random delays (1–5 min)...")
       urns = await run_post_all(session, user_id)
+      await clear_session()
       await query.message.reply_text(
         f"✅ Posted {len(urns)} item(s) to LinkedIn."
       )
     elif data == "post:cancel":
       await clear_state(user_id)
       await query.edit_message_text("❌ Posting cancelled.")
-
 
 # ── internal flow helpers ──────────────────────────────────────────────────
 async def _generate_next_draft(message, session, user_id: int, context) -> None:

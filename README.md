@@ -64,10 +64,8 @@ src/bot/
 | `WEBHOOK_URL` | 🌐 Public HTTPS domain, no trailing slash |
 | `WEBHOOK_SECRET` | 🔑 Random secret for webhook auth |
 | `ADMIN_USER_ID` | 👤 Your Telegram user ID |
-| `LINKEDIN_CLIENT_ID` | 💼 LinkedIn app client ID |
-| `LINKEDIN_CLIENT_SECRET` | 🔒 LinkedIn app client secret |
-| `LINKEDIN_PERSON_ID` | 🪪 Your LinkedIn person ID |
-| `LINKEDIN_TOKEN` | 🎫 OAuth access token |
+| `PERSON_ID` | 🪪 Your LinkedIn person ID |
+| `TOKEN` | 🎫 OAuth access token |
 | `OPENAI_API_KEY` | 🧠 OpenAI API key |
 | `DEFAULT_MODEL` | e.g. `gpt-4o` |
 | `IMAGE_MODEL` | e.g. `gpt-image-1` |

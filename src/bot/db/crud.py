@@ -22,7 +22,6 @@ async def get_unposted(filter_date: date | None = None) -> list[NewsPost]:
       AND ups >= 100
       AND posted_at::date = $1
       ORDER BY ups DESC
-      LIMIT 3
       """,
       filter_date,
     )
@@ -34,6 +33,7 @@ async def get_unposted(filter_date: date | None = None) -> list[NewsPost]:
       WHERE status = 'unprocessed'
       AND ups >= 100
       ORDER BY ups DESC
+      LIMIT 10
       """
     )
   return [_parse_row(row) for row in rows]

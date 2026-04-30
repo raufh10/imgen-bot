@@ -1,19 +1,16 @@
-from datetime import date, timedelta
 from uuid import uuid4
 
 from cache.models import NewsItem, SessionCache
-from cache.temp import get_session, set_session
+from cache.temp import clear_session, get_session, set_session
 from db.crud import get_unposted
 from export.client import get_person_urn, get_token
 
 async def init_session() -> SessionCache:
-  yesterday = date.today() - timedelta(days=1)
-
-  existing = await get_session(yesterday)
+  existing = await get_session()
   if existing:
     return existing
 
-  posts = await get_unposted(filter_date=yesterday)
+  posts = await get_unposted()
   news = [
     NewsItem(
       id=uuid4(),
@@ -24,7 +21,6 @@ async def init_session() -> SessionCache:
   ]
 
   session = SessionCache(
-    date=yesterday,
     person_urn=get_person_urn(),
     token=get_token(),
     news=news,
