@@ -47,7 +47,7 @@ async def _send_news_item(message, session, index: int) -> None:
     f"📰 <b>{index+1}/{total}</b>\n\n"
     f"<b>{post.title}</b>\n\n"
     f"r/{post.subreddit} · ⬆️ {post.ups}\n"
-    f"{post.content or ''}\n"
+    f"{post.content[:200] or ''}\n"
     f"{post.url or ''}"
   )
   await message.reply_text(
