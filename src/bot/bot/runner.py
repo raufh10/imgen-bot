@@ -34,7 +34,14 @@ async def run_generate_draft(item: NewsItem) -> NewsItem:
   result = await Runner.run(llm.get_designer(), prompt)
   drafts = result.final_output.draft_options
   item.drafts = drafts
-  item.draft = "\n---\n".join(
+
+  header = (
+    f"📰 <b>{item.original.title}</b>\n"
+    f"<i>{item.original.content[:200] + '...' if item.original.content and len(item.original.content) > 200 else item.original.content or ''}</i>\n"
+    f"\n"
+  )
+
+  item.draft = header + "\n---\n".join(
     [f"<b>Option {i+1}</b>\n{d.intro}\n{d.bridge}\n\n<i>{d.image_draft}</i>" for i, d in enumerate(drafts)]
   )
   return item
