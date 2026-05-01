@@ -18,7 +18,6 @@ class DraftResult(BaseModel):
   )
 
 class ImageResult(BaseModel):
-  image_b64: str = Field(..., description="The base64 encoded string of the generated image")
   image_copy: str = Field(..., description="The specific text, headline, or news copy displayed within the image")
   explanation: str = Field(
     ..., 
