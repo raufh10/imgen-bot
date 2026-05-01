@@ -1,4 +1,4 @@
-from agents import Agent
+from agents import Agent, WebSearchTool
 from core.config import settings
 from llm.tools import IMAGE_GEN_TOOL
 from llm.models import DraftResult, ImageResult
@@ -10,6 +10,7 @@ class LLMClient:
       name="Content Designer",
       instructions=DESIGNER_SYSTEM_PROMPT,
       model=settings.default_model,
+      tools=[WebSearchTool(search_context_size="low")],
       output_type=DraftResult
     )
 
@@ -28,4 +29,3 @@ class LLMClient:
   def get_artist(self) -> Agent:
     """Returns the agent responsible for final image rendering."""
     return self.artist_agent
-
