@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -e .
 
 COPY src/ ./src/
 
-ENV PYTHONPATH=src/bot
+ENV PYTHONPATH=src/
 
 EXPOSE 8000
 
