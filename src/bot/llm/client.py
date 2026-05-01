@@ -13,7 +13,6 @@ class LLMClient:
       output_type=DraftResult
     )
 
-    # Agent 2: The Artist (Focuses on the actual image generation)
     self.artist_agent = Agent(
       name="Visual Artist",
       instructions=ARTIST_SYSTEM_PROMPT,
