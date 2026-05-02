@@ -18,7 +18,7 @@ async def get_unposted() -> list[NewsPost]:
     SELECT id, subreddit, title, content, url, ups, upvote_ratio, posted_at
     FROM news_posts
     WHERE status = 'unprocessed'
-    AND ups >= 100
+    AND ups >= 50
     AND posted_at >= NOW() - INTERVAL '24 hours'
     ORDER BY ups DESC
     """
