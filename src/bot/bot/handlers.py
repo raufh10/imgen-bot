@@ -44,6 +44,8 @@ async def _send_news_item(message, session, index: int) -> None:
   post = item.original
   total = len(session.news)
 
+  print(post.metadata)
+
   permalink = None
   if post.metadata and isinstance(post.metadata, dict):
     permalink = post.metadata.get("permalink")
